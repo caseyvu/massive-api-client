@@ -2,8 +2,9 @@ import asyncio
 import httpx
 import inspect
 from collections.abc import AsyncIterator
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from http import HTTPStatus
 from typing import Any, Dict, Optional, Union
 from urllib.parse import urlparse
 
@@ -13,7 +14,7 @@ from ..exceptions import BadResponseException, RateLimitException
 
 class BaseClient:
 
-    RATE_LIMIT_HTTP_CODE = 429
+    RATE_LIMIT_HTTP_CODE = HTTPStatus.TOO_MANY_REQUESTS
     RESULTS_FIELD = "results"
     NEXT_URL_FIELD = "next_url"
     HTTP_METHOD_GET = "GET"
