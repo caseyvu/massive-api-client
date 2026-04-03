@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "massive-api-client"
-version = "0.0.1"
+version = "0.0.1a0"
 description = "A Python async wrapper for massive.com API"
 readme = "README.md"
 requires-python = ">=3.10"
