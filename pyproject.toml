@@ -12,7 +12,10 @@ license = { text = "MIT" }
 authors = [
   { name = "Casey Vu" }
 ]
-dependencies = []
+dependencies = [
+  "httpx >= 0.28.1",
+  "massive >= 2.4.0",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

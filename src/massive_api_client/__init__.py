@@ -4,5 +4,3 @@ from .exceptions import *
 
 
 __version__ = importlib.metadata.version("massive-api-client")
-
-print(__version__)
