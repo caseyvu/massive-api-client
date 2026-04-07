@@ -1,6 +1,7 @@
 import asyncio
 import httpx
 import inspect
+import logging
 from collections.abc import AsyncIterator
 from datetime import datetime
 from enum import Enum
@@ -10,6 +11,9 @@ from urllib.parse import urlparse
 
 from ..config import MassiveClientConfig
 from ..exceptions import BadResponseException, RateLimitException
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseClient:
@@ -83,7 +87,14 @@ class BaseClient:
 
         retries_count = 0
         while response.status_code == self.RATE_LIMIT_HTTP_CODE and retries_count < self._rate_limit_max_retries:
-            print(f"SLEEPING 1 min because status_code = 409...")
+            logger.warning(
+                "Rate limited with status_code=%s; sleeping %s seconds before retry %s for %s %s",
+                response.status_code,
+                self._rate_limit_sleep_secs,
+                retries_count + 1,
+                method,
+                url,
+            )
             await asyncio.sleep(self._rate_limit_sleep_secs)
             response = await self._client.request(method, url, params=params, headers=headers)
             retries_count += 1
