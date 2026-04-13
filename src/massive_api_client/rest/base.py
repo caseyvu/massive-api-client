@@ -37,7 +37,7 @@ class BaseClient:
         }
 
     async def close(self) -> None:
-        await self.client.aclose()
+        await self._client.aclose()
 
     async def request(self, uri: str, params: Optional[Dict] = None, deserializer=None, result_key: Optional[str] = RESULTS_FIELD, method: str = HTTP_METHOD_GET) -> Any:
         full_url = self.make_full_url(uri)
