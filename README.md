@@ -33,6 +33,13 @@ This package is still a work in progress, so it currently supports only a subset
 - `list_aggs(ticker, multiplier, timespan, from_, to, ...)`
 - `get_grouped_daily_aggs(date, ...)`
 
+### Indicators
+
+- `get_sma(ticker, ...)`
+- `get_ema(ticker, ...)`
+- `get_rsi(ticker, ...)`
+- `get_macd(ticker, ...)`
+
 ## Installation
 
 Install from PyPI:
@@ -60,6 +67,9 @@ async def main() -> None:
     try:
         details = await client.get_ticker_details("AAPL")
         print(details.name)
+
+        sma = await client.get_sma("AAPL", timespan="day", window=10, limit=5)
+        print(sma.values[0].value)
 
         tickers = [
             ticker
@@ -149,6 +159,10 @@ Responses are deserialized into models from the official `massive` package, for 
 - `TickerTypes`
 - `Agg`
 - `GroupedDailyAgg`
+- `SMAIndicatorResults`
+- `EMAIndicatorResults`
+- `RSIIndicatorResults`
+- `MACDIndicatorResults`
 
 This means you can keep using the official model types while switching to an async workflow.
 
