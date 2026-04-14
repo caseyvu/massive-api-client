@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from enum import Enum
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from ..config import MassiveClientConfig
@@ -41,9 +41,9 @@ class BaseClient:
 
     async def request(self, uri: str, params: Optional[Dict] = None, deserializer=None, result_key: Optional[str] = RESULTS_FIELD, method: str = HTTP_METHOD_GET) -> Any:
         full_url = self.make_full_url(uri)
-        response = await self._request_with_retries(method, full_url, params, self._headers)
+        response, raw_resp = await self._request_with_retries(method, full_url, params, self._headers)
         if result_key is not None and result_key not in response:
-            raise BadResponseException(message=f"API Response does not contain field: {result_key}", response=response)
+            raise BadResponseException(message=f"API Response does not contain field: {result_key}", response=raw_resp)
         
         resp_obj = response if result_key is None else response[result_key]
         return self._apply_deserializer(deserializer, resp_obj)
@@ -57,9 +57,9 @@ class BaseClient:
         max_num_pages = self.DEFAULT_MAX_NUM_PAGES if max_num_pages is None else max_num_pages
         page_i = 0
         while page_i < max_num_pages:
-            response = await self._request_with_retries(method, full_url, params, self._headers)
+            response, raw_resp = await self._request_with_retries(method, full_url, params, self._headers)
             if result_key not in response:
-                raise BadResponseException(message=f"API Response does not contain field: {result_key}", response=response)
+                raise BadResponseException(message=f"API Response does not contain field: {result_key}", response=raw_resp)
         
             for item in response[result_key]:
                 yield self._apply_deserializer(deserializer, item)
@@ -82,7 +82,7 @@ class BaseClient:
     def make_full_url(self, uri: str) -> str:
         return f"{self._base_url}{uri}"
     
-    async def _request_with_retries(self, method: str, url: str, params: Optional[Union[Dict, str]] = None, headers: Optional[Dict] = None) -> Any:
+    async def _request_with_retries(self, method: str, url: str, params: Optional[Union[Dict, str]] = None, headers: Optional[Dict] = None) -> Tuple[Any, httpx.Response]:
         response = await self._client.request(method, url, params=params, headers=headers)
 
         retries_count = 0
@@ -103,7 +103,7 @@ class BaseClient:
             raise RateLimitException(message=f"Receive status_code={response.status_code} even after {retries_count} retries", response=response)
         
         response.raise_for_status()
-        return response.json()
+        return response.json(), response
 
     def _get_params(
         self, fn, caller_locals: Dict[str, Any], datetime_res: str = "nanos"
