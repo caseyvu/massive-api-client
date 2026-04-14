@@ -5,7 +5,7 @@ from massive.rest.models import Branding, CompanyAddress, TickerDetails
 from unittest.mock import call, patch, AsyncMock
 
 from massive_api_client.config import MassiveClientConfig
-from massive_api_client.exceptions import RateLimitException
+from massive_api_client.exceptions import BadResponseException, RateLimitException
 from massive_api_client.rest import MassiveAPIClient
 
 
@@ -56,6 +56,11 @@ RESPONSE = {
     "request_id": "ce8688b5f3a571351376ebd77acd146e"
 }
 
+INVALID_RESPONSE = {
+    "status": "OK",
+    "request_id": "ce8688b5f3a571351376ebd77acd146e"
+}
+
 EXPECTED_ITEM = TickerDetails(
     ticker="AAPL",
     name="Apple Inc.",
@@ -97,6 +102,20 @@ config = MassiveClientConfig(
     rate_limit_sleep_secs=TEST_RATE_LIMIT_SLEEP_SECS,
     rate_limit_max_retries=TEST_RATE_LIMIT_MAX_RETRIES,
 )
+
+
+@pytest.mark.asyncio
+async def test_with_invalid_response_body():
+    def transport_handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == EXPECTED_URI:
+            return httpx.Response(HTTPStatus.OK, json=INVALID_RESPONSE)
+        return httpx.Response(404, json={"error": "not found"})
+
+    massiveAPIClient = MassiveAPIClient(config)
+    massiveAPIClient._client = httpx.AsyncClient(transport=httpx.MockTransport(handler=transport_handler))
+
+    with pytest.raises(BadResponseException):
+        await massiveAPIClient.get_ticker_details(TEST_TICKER)
 
 
 @pytest.mark.asyncio

@@ -5,7 +5,7 @@ from massive.rest.models import Ticker
 from unittest.mock import call, patch, AsyncMock
 
 from massive_api_client.config import MassiveClientConfig
-from massive_api_client.exceptions import RateLimitException
+from massive_api_client.exceptions import BadResponseException, RateLimitException
 from massive_api_client.rest import MassiveAPIClient
 
 
@@ -94,6 +94,12 @@ EMPTY_PAGE_RESP = {
     "status": "OK",
     "request_id": "40d60d83fa0628503b4d13387b7bde2a",
     "count": 2
+}
+
+NO_RESULTS_PAGE_RESP = {
+    "status": "OK",
+    "request_id": "40d60d83fa0628503b4d13387b7bde2a",
+    "count": 0
 }
 
 EXPECTED_ITEMS = [
@@ -216,6 +222,22 @@ async def test_no_result():
 
     result = [item async for item in massiveAPIClient.list_tickers()]
     assert len(result) == 0
+
+
+@pytest.mark.asyncio
+async def test_invalid_response_body():
+    def transport_handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == EXPECTED_URI:
+            cursor_val = request.url.params.get("cursor")
+            if cursor_val is None:
+                return httpx.Response(HTTPStatus.OK, json=NO_RESULTS_PAGE_RESP)
+        return httpx.Response(404, json={"error": "not found"})
+
+    massiveAPIClient = MassiveAPIClient(config)
+    massiveAPIClient._client = httpx.AsyncClient(transport=httpx.MockTransport(handler=transport_handler))
+
+    with pytest.raises(BadResponseException):
+        result = [item async for item in massiveAPIClient.list_tickers()]
 
 
 @pytest.mark.asyncio
